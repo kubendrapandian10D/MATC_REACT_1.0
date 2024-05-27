@@ -1,59 +1,42 @@
-name: CI/CD Pipeline for tailWindCSS_MATC
-
+name: Build and Push Docker Image
 
 on:
- push:
-   branches:
-     - master
- pull_request:
-   branches:
-     - master
-
-env:
- DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
- DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}   
+  push:
+    branches:
+      - main
 
 jobs:
- build:
-   runs-on: ubuntu-latest
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-   steps:
-   
-     - name: Checkout repository
-       uses: actions/checkout@v3
+      - name: Determine Version
+        id: version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0)
+          VERSION=${VERSION#v} # Remove 'v' prefix
+          IFS='.' read -r -a PARTS <<< "$VERSION"
+          MAJOR="${PARTS[0]}"
+          MINOR="${PARTS[1]}"
+          PATCH="${PARTS[2]}"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "::set-output name=version::$NEW_VERSION"
 
+      - name: Build Docker image
+        run: docker build -t kubendrapandian10d/react-project:${{ steps.version.outputs.version }} .
 
-     - name: Log in to DockerHub
-       uses: docker/login-action@v3
-       with:
-         username: ${{ secrets.DOCKER_USERNAME }}
-         password: ${{ secrets.DOCKER_PASSWORD }}
-         
-     - name: Build Docker image
-       run: docker build -t kubendrapandian10d/react-project:v1 .
-      
-     - name: Push Docker image
-       run: docker push kubendrapandian10d/react-project:v1
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-     - name: Extract metadata (tags, labels) for Docker
-       id: meta
-       uses: docker/metadata-action@v4
-       with:
-          images: kubendrapandian10d/react-project
-          
-     - name: Build and push Docker image
-       run: |
-         docker build -t kubendrapandian10d/react-project:v1 .
-         docker push kubendrapandian10d/react-project:v1
-
-     - name: Pull latest version from DockerHub
-       run: |
-         docker pull kubendrapandian10d/react-project:v1
-
-     - name: Pull all versions from DockerHub
-       run: |
-         tags=$(curl -s "https://hub.docker.com/v2/repositories/kubendrapandian10d/my-project/tags/?page_size=100" | jq -r '.results|.[]|.name')
-         for tag in $tags; do
-           docker pull kubendrapandian10d/react-project:$tag
-         done
+      - name: Push Docker image to Docker Hub
+        run: docker push kubendrapandian10d/react-project:${{ steps.version.outputs.version }}
