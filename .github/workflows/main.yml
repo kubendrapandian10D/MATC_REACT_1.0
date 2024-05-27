@@ -1,0 +1,59 @@
+name: CI/CD Pipeline for tailWindCSS_MATC
+
+
+on:
+ push:
+   branches:
+     - main
+ pull_request:
+   branches:
+     - main
+
+env:
+ DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+ DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}   
+
+jobs:
+ build:
+   runs-on: ubuntu-latest
+
+
+   steps:
+   
+     - name: Checkout repository
+       uses: actions/checkout@v3
+
+
+     - name: Log in to DockerHub
+       uses: docker/login-action@v3
+       with:
+         username: ${{ secrets.DOCKER_USERNAME }}
+         password: ${{ secrets.DOCKER_PASSWORD }}
+         
+     - name: Build Docker image
+       run: docker build -t kubendrapandian10d/my-project:latest .
+      
+     - name: Push Docker image
+       run: docker push kubendrapandian10d/my-project:latest 
+
+     - name: Extract metadata (tags, labels) for Docker
+       id: meta
+       uses: docker/metadata-action@v4
+       with:
+          images: kubendrapandian10d/my-project
+          
+     - name: Build and push Docker image
+       run: |
+         docker build -t kubendrapandian10d/my-project:v1 .
+         docker push kubendrapandian10d/my-project:v1
+
+     - name: Pull latest version from DockerHub
+       run: |
+         docker pull kubendrapandian10d/my-project:v1
+
+     - name: Pull all versions from DockerHub
+       run: |
+         tags=$(curl -s "https://hub.docker.com/v2/repositories/kubendrapandian10d/my-project/tags/?page_size=100" | jq -r '.results|.[]|.name')
+         for tag in $tags; do
+           docker pull kubendrapandian10d/my-project:$tag
+         done
