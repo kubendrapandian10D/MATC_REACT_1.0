@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Incremental Docker Build
 
 on:
   push:
@@ -6,37 +6,35 @@ on:
       - master
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Determine Version
-        id: version
-        run: |
-          VERSION=$(git describe --tags --abbrev=0)
-          VERSION=${VERSION#v} # Remove 'v' prefix
-          IFS='.' read -r -a PARTS <<< "$VERSION"
-          MAJOR="${PARTS[0]}"
-          MINOR="${PARTS[1]}"
-          PATCH="${PARTS[2]}"
-          NEW_PATCH=$((PATCH + 1))
-          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-          echo "::set-output name=version::$NEW_VERSION"
-
-      - name: Build Docker image
-        run: docker build -t kubendrapandian10d/react-project:${{ steps.version.outputs.version }} .
-
-      - name: Log in to Docker Hub
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+         username: ${{ secrets.DOCKER_USERNAME }}
+         password: ${{ secrets.DOCKER_PASSWORD }}
+         
 
-      - name: Push Docker image to Docker Hub
-        run: docker push kubendrapandian10d/react-project:${{ steps.version.outputs.version }}
+      - name: Retrieve Latest Docker Tag
+        id: latest_tag
+        run: |
+          latest_tag=$(curl -s -H "Authorization: Bearer $DOCKER_ACCESS_TOKEN" https://registry.hub.docker.com/v2/repositories/kubendrapandian10d/react-project/tags | jq -r '.results | map(select(.name | test("^v[0-9]+$"))) | map(.name | ltrimstr("v")) | map(tonumber) | max')
+          echo "::set-output name=latest_tag::v${latest_tag:-0}"
+
+      - name: Increment Version Number
+        id: increment_version
+        run: |
+          latest_tag=${{ steps.latest_tag.outputs.latest_tag }}
+          new_version=$((latest_tag + 1))
+          echo "::set-output name=new_version::v$new_version"
+
+      - name: Build Docker Image
+        run: docker build -t kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }} .
+
+      - name: Push Docker Image
+        run: docker push kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
