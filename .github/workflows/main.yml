@@ -31,10 +31,10 @@ jobs:
          password: ${{ secrets.DOCKER_PASSWORD }}
          
      - name: Build Docker image
-       run: docker build -t kubendrapandian10d/my-project:latest .
+       run: docker build -t kubendrapandian10d/my-project:v1 .
       
      - name: Push Docker image
-       run: docker push kubendrapandian10d/my-project:latest 
+       run: docker push kubendrapandian10d/my-project:v1
 
      - name: Extract metadata (tags, labels) for Docker
        id: meta
