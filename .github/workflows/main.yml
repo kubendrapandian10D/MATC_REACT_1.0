@@ -31,29 +31,29 @@ jobs:
          password: ${{ secrets.DOCKER_PASSWORD }}
          
      - name: Build Docker image
-       run: docker build -t kubendrapandian10d/my-project:v1 .
+       run: docker build -t kubendrapandian10d/react-project:v1 .
       
      - name: Push Docker image
-       run: docker push kubendrapandian10d/my-project:v1
+       run: docker push kubendrapandian10d/react-project:v1
 
      - name: Extract metadata (tags, labels) for Docker
        id: meta
        uses: docker/metadata-action@v4
        with:
-          images: kubendrapandian10d/my-project
+          images: kubendrapandian10d/react-project
           
      - name: Build and push Docker image
        run: |
-         docker build -t kubendrapandian10d/my-project:v1 .
-         docker push kubendrapandian10d/my-project:v1
+         docker build -t kubendrapandian10d/react-project:v1 .
+         docker push kubendrapandian10d/react-project:v1
 
      - name: Pull latest version from DockerHub
        run: |
-         docker pull kubendrapandian10d/my-project:v1
+         docker pull kubendrapandian10d/react-project:v1
 
      - name: Pull all versions from DockerHub
        run: |
          tags=$(curl -s "https://hub.docker.com/v2/repositories/kubendrapandian10d/my-project/tags/?page_size=100" | jq -r '.results|.[]|.name')
          for tag in $tags; do
-           docker pull kubendrapandian10d/my-project:$tag
+           docker pull kubendrapandian10d/react-project:$tag
          done
