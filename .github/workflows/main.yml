@@ -1,36 +1,58 @@
 name: CI/CD Pipeline 
 
-
 on:
- push:
-   branches:
-     - master
- pull_request:
-   branches:
-     - master
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 env:
- DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
- DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}   
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
 jobs:
- build:
-   runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-
-   steps:
-   
-     - name: Checkout repository
-       uses: actions/checkout@v3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
       
-     - name: set up Docker
-       uses: docker/setup-buildx-action@v1
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v1
 
-     - name: login the docker,build and push the image
-       run: |
-         docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD}}
-         DOCKER_ACCESS_TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'$DOCKER_USERNAME'", "password": "'$DOCKER_PASSWORD'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
-         input_string=$(curl -s -H "Authorization: Bearer $DOCKER_ACCESS_TOKEN" https://registry.hub.docker.com/v2/repositories/kubendrapandian10d/react-project/tags | jq -r '.results | max_by(.last_updated) | .name')
-         number=$(echo "$input_string" | grep -oE '[0-9]+$') && new_number=$((number + 1)) && new_version=$(echo "$input_string" | sed "s/$number$/$new_number/")
-         docker build -t kubendrapandian10d/react-project:$new_string .
-         docker push kubendrapandian10d/react-project:$new_string
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Retrieve Latest Docker Tag
+        id: latest_tag
+        run: |
+          DOCKER_ACCESS_TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d "{\"username\": \"${{ secrets.DOCKER_USERNAME }}\", \"password\": \"${{ secrets.DOCKER_PASSWORD }}\"}" https://hub.docker.com/v2/users/login/ | jq -r .token)
+          latest_tag=$(curl -s -H "Authorization: Bearer $DOCKER_ACCESS_TOKEN" https://registry.hub.docker.com/v2/repositories/kubendrapandian10d/react-project/tags | jq -r '[.results | .[] | select(.name | test("^v[0-9]+$")) | .name | ltrimstr("v") | tonumber] | max')
+          if [ "$latest_tag" = "null" ]; then
+            latest_tag=0
+          fi
+          echo "Latest tag: v$latest_tag"
+          echo "::set-output name=latest_tag::v$latest_tag"
+
+      - name: Increment Version Number
+        id: increment_version
+        run: |
+          latest_tag=${{ steps.latest_tag.outputs.latest_tag }}
+          number=$(echo "$latest_tag" | grep -oE '[0-9]+$')
+          if [ -z "$number" ]; then
+            number=0
+          fi
+          new_number=$((number + 1))
+          new_version="v$new_number"
+          echo "New version: $new_version"
+          echo "::set-output name=new_version::$new_version"
+
+      - name: Build Docker Image
+        run: docker build -t kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }} .
+
+      - name: Push Docker Image
+        run: docker push kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
+
