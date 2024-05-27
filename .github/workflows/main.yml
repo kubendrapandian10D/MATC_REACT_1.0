@@ -4,10 +4,10 @@ name: CI/CD Pipeline for tailWindCSS_MATC
 on:
  push:
    branches:
-     - main
+     - master
  pull_request:
    branches:
-     - main
+     - master
 
 env:
  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
