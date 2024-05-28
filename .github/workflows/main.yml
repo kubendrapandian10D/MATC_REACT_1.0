@@ -9,8 +9,8 @@ on:
       - master
 
 env:
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  DOCKER_USERNAME: kubendrapandian10d
+  DOCKER_PASSWORD: pandi_@17
 
 jobs:
   build:
