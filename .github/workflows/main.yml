@@ -25,7 +25,7 @@ jobs:
 
       - name: Login to Docker Hub
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -P ${{ secrets.DOCKER_PASSWORD }}
+          docker login --username ${{ secrets.DOCKER_USERNAME }} --Password ${{ secrets.DOCKER_PASSWORD }}
          
       - name: Retrieve Latest Docker Tag
         id: latest_tag
