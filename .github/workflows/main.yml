@@ -64,4 +64,4 @@ jobs:
           docker pull kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
           docker stop react-project || true
           docker rm react-project || true
-          docker run -d --name react-project -p 80:80 kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
+          docker run -d --name react-project -p 5050:80 kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
