@@ -72,7 +72,8 @@ jobs:
           cat /tmp/docker-config/config.json 
           
       - name: Push Docker Image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }}
+        run: |
+          docker --config /tmp/docker-config push ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }}
 
       - name: Deploy to Self-Hosted Environment
         run: |
