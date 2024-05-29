@@ -14,7 +14,7 @@ env:
 
 jobs:
   build:
-    runs-on: self-Hosted
+    runs-on: self-hosted
     
     steps:
       - name: Checkout repository
@@ -29,7 +29,7 @@ jobs:
       - name: Create a temporary Docker config directory
         run: mkdir -p /tmp/docker-config  
 
-      - name: Login to Docker Hub 
+      - name: Login to Docker Hub
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker --config /tmp/docker-config login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           docker --config /tmp/docker-config info
@@ -41,7 +41,7 @@ jobs:
         id: latest_tag
         run: |
           DOCKER_ACCESS_TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d "{\"username\": \"${{ secrets.DOCKER_USERNAME }}\", \"password\": \"${{ secrets.DOCKER_PASSWORD }}\"}" https://hub.docker.com/v2/users/login/ | jq -r .token)
-          latest_tag=$(curl -s -H "Authorization: Bearer $DOCKER_ACCESS_TOKEN" https://registry.hub.docker.com/v2/repositories/kubendrapandian10d/react-project/tags | jq -r '[.results | .[] | select(.name | test("^v[0-9]+$")) | .name | ltrimstr("v") | tonumber] | max')
+          latest_tag=$(curl -s -H "Authorization: Bearer $DOCKER_ACCESS_TOKEN" https://registry.hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/react-project/tags | jq -r '[.results | .[] | select(.name | test("^v[0-9]+$")) | .name | ltrimstr("v") | tonumber] | max')
           if [ "$latest_tag" = "null" ]; then
             latest_tag=0
           fi
@@ -63,9 +63,6 @@ jobs:
 
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }} .
-
-      - name: Verify Docker Hub Login
-        run: docker --config /tmp/docker-config login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Push Docker Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }}
