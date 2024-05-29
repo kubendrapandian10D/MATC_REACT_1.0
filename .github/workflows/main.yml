@@ -62,14 +62,14 @@ jobs:
           echo "::set-output name=new_version::$new_version"
 
       - name: Build Docker Image
-        run: docker build -t kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }} .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }} .
 
       - name: Push Docker Image
-        run: docker push kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }}
 
       - name: Deploy to Self-Hosted Environment
         run: |
-          docker pull kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
+          docker pull ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }}
           docker stop react-project || true
           docker rm react-project || true
-          docker run -d --name react-project -p 5050:80 kubendrapandian10d/react-project:${{ steps.increment_version.outputs.new_version }}
+          docker run -d --name react-project -p 5050:80 ${{ secrets.DOCKER_USERNAME }}/react-project:${{ steps.increment_version.outputs.new_version }}
